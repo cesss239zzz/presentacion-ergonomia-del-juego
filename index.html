@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ergonomía del Juego | Dispositivos de Interacción en Videojuegos</title>
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-deep: #030712;
+      --bg-panel: rgba(15, 23, 42, 0.75);
+      --bg-card: rgba(30, 41, 59, 0.65);
+      --neon-cyan: #00f0ff;
+      --neon-magenta: #ff007f;
+      --neon-purple: #9d4edd;
+      --neon-green: #00ff88;
+      --neon-amber: #ffb703;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-cyan: rgba(0, 240, 255, 0.35);
+      --border-magenta: rgba(255, 0, 127, 0.35);
+      --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.35);
+      --glow-magenta: 0 0 20px rgba(255, 0, 127, 0.35);
+      --transition-flight: transform 1.3s cubic-bezier(0.65, 0, 0.35, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-deep);
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-main);
+    }
+
+    /* Fondo espacial de estrellas animado */
+    #space-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Grilla holográfica de fondo */
+    .cyber-grid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-image: 
+        linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+      background-size: 80px 80px;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* HUD SUPERIOR */
+    .hud-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 72px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      background: linear-gradient(180deg, rgba(3, 7, 18, 0.9) 0%, rgba(3, 7, 18, 0) 100%);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+    }
+
+    .hud-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hud-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+    }
+
+    .hud-logo-icon {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--neon-cyan);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--glow-cyan);
+      background: rgba(0, 240, 255, 0.1);
+    }
+
+    .btn-hud {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-cyan);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-hud:hover {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--neon-cyan);
+      box-shadow: var(--glow-cyan);
+      transform: translateY(-1px);
+    }
+
+    .btn-hud.active {
+      background: var(--neon-cyan);
+      color: #000;
+      font-weight: 700;
+      box-shadow: var(--glow-cyan);
+    }
+
+    .slide-progress-pill {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      color: var(--neon-cyan);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* CONTENEDOR PREZI 2D SPATIAL ENGINE */
+    #viewport {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    #universe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      transition: var(--transition-flight);
+      will-change: transform;
+    }
+
+    /* Conexiones constelación SVG */
+    #constellation-lines {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 16000px;
+      height: 12000px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* DIAPOSITIVAS (SLIDES) */
+    .slide {
+      position: absolute;
+      width: 1240px;
+      height: 720px;
+      background: rgba(15, 23, 42, 0.82);
+      border: 2px solid var(--border-cyan);
+      border-radius: 24px;
+      padding: 44px 52px;
+      backdrop-filter: blur(18px);
+      box-shadow: 
+        0 25px 60px rgba(0, 0, 0, 0.85),
+        inset 0 0 40px rgba(0, 240, 255, 0.05);
+      transition: border-color 0.4s ease, box-shadow 0.4s ease, opacity 0.4s ease;
+      transform-origin: center center;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    .slide::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta), var(--neon-purple));
+    }
+
+    .slide.active {
+      border-color: var(--neon-cyan);
+      box-shadow: 
+        0 0 40px rgba(0, 240, 255, 0.35),
+        inset 0 0 50px rgba(0, 240, 255, 0.08);
+      z-index: 20;
+    }
+
+    .slide.overview-mode:hover {
+      border-color: var(--neon-magenta);
+      box-shadow: var(--glow-magenta);
+      cursor: pointer;
+    }
+
+    /* Cabecera del slide */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      border-bottom: 1px dashed rgba(0, 240, 255, 0.25);
+      padding-bottom: 16px;
+    }
+
+    .slide-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--neon-cyan);
+      background: rgba(0, 240, 255, 0.12);
+      padding: 4px 12px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      border-left: 3px solid var(--neon-cyan);
+    }
+
+    .slide-number-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    .slide-title {
+      font-size: 2.3rem;
+      font-weight: 800;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #ffffff 0%, var(--neon-cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .slide-subtitle {
+      font-size: 1.15rem;
+      color: var(--neon-magenta);
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    /* Contenido interno y layouts de slides */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      gap: 36px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    .slide-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .cyber-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 20px;
+      position: relative;
+    }
+
+    .cyber-card.highlight {
+      border-left: 4px solid var(--neon-magenta);
+      background: rgba(255, 0, 127, 0.06);
+    }
+
+    .cyber-card.cyan-highlight {
+      border-left: 4px solid var(--neon-cyan);
+      background: rgba(0, 240, 255, 0.06);
+    }
+
+    .cyber-card h3 {
+      font-size: 1.2rem;
+      color: var(--neon-cyan);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cyber-card p, .cyber-card li {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+    }
+
+    .cyber-card ul {
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Tablas ergonómicas */
+    .cyber-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 0.92rem;
+    }
+
+    .cyber-table th {
+      text-align: left;
+      padding: 10px 14px;
+      background: rgba(0, 240, 255, 0.15);
+      color: var(--neon-cyan);
+      font-family: 'JetBrains Mono', monospace;
+      border-bottom: 2px solid var(--border-cyan);
+    }
+
+    .cyber-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      color: #e2e8f0;
+    }
+
+    .cyber-table tr:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    /* Imágenes y SVGs embebidos */
+    .slide-image-box {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border-cyan);
+      background: #0b1120;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slide-image-box img {
+      width: 100%;
+      height: auto;
+      max-height: 380px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .image-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(3, 7, 18, 0.85);
+      color: var(--neon-cyan);
+      font-size: 0.8rem;
+      padding: 6px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      border-top: 1px solid var(--border-cyan);
+    }
+
+    /* Pie del slide */
+    .slide-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 18px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* HUD INFERIOR / CONTROLES DE NAVEGACIÓN */
+    .hud-footer {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid var(--border-cyan);
+      padding: 10px 24px;
+      border-radius: 50px;
+      backdrop-filter: blur(12px);
+      box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.8),
+        var(--glow-cyan);
+    }
+
+    .btn-nav {
+      background: rgba(30, 41, 59, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+    }
+
+    .btn-nav:hover {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: var(--glow-cyan);
+      transform: scale(1.05);
+    }
+
+    .btn-nav:active {
+      transform: scale(0.97);
+    }
+
+    /* MINIMAPA RADAR (Esquina inferior derecha) */
+    .minimap-wrapper {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border-cyan);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8), var(--glow-cyan);
+      backdrop-filter: blur(10px);
+    }
+
+    .minimap-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--neon-cyan);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #minimap-svg {
+      width: 220px;
+      height: 140px;
+      background: rgba(3, 7, 18, 0.75);
+      border-radius: 8px;
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      cursor: pointer;
+    }
+
+    .minimap-node {
+      fill: rgba(148, 163, 184, 0.4);
+      stroke: var(--text-muted);
+      stroke-width: 2;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .minimap-node:hover {
+      fill: var(--neon-magenta);
+      stroke: var(--neon-magenta);
+    }
+
+    .minimap-node.active {
+      fill: var(--neon-cyan);
+      stroke: #fff;
+      stroke-width: 3;
+      filter: drop-shadow(0 0 6px var(--neon-cyan));
+    }
+
+    /* SIDEBAR DESPLEGABLE (ÍNDICE) */
+    #sidebar {
+      position: fixed;
+      top: 0;
+      left: -400px;
+      width: 380px;
+      height: 100vh;
+      background: rgba(11, 17, 32, 0.96);
+      border-right: 2px solid var(--border-cyan);
+      z-index: 200;
+      transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 20px 0 50px rgba(0, 0, 0, 0.8);
+    }
+
+    #sidebar.open {
+      left: 0;
+    }
+
+    .sidebar-header {
+      padding: 24px;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sidebar-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--neon-cyan);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-close-sidebar {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .btn-close-sidebar:hover {
+      color: var(--neon-magenta);
+    }
+
+    .sidebar-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sidebar-item {
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: rgba(30, 41, 59, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.25s ease;
+    }
+
+    .sidebar-item:hover {
+      background: rgba(0, 240, 255, 0.12);
+      border-color: var(--neon-cyan);
+      transform: translateX(4px);
+    }
+
+    .sidebar-item.active {
+      background: rgba(0, 240, 255, 0.2);
+      border-left: 4px solid var(--neon-cyan);
+      font-weight: 700;
+    }
+
+    .sidebar-item-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--neon-cyan);
+      min-width: 28px;
+    }
+
+    /* SCROLLBAR CUSTOM */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.4);
+      border-radius: 4px;
+    }
+
+    /* GUÍA DE TECLADO FLOTANTE */
+    .keyboard-hint {
+      position: fixed;
+      bottom: 28px;
+      left: 28px;
+      z-index: 90;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 12px;
+    }
+
+    kbd {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Fondo de estrellas espacial -->
+  <canvas id="space-canvas"></canvas>
+  <div class="cyber-grid"></div>
+
+  <!-- HUD SUPERIOR -->
+  <header class="hud-header">
+    <div class="hud-left">
+      <button class="btn-hud" id="btn-sidebar-toggle" title="Abrir índice de diapositivas">
+        <span>☰</span> ÍNDICE
+      </button>
+      <div class="hud-logo">
+        <div class="hud-logo-icon">🎮</div>
+        <span>PREZI ENGINE // ERGONOMÍA DEL JUEGO</span>
+      </div>
+    </div>
+
+    <div class="slide-progress-pill">
+      <span id="current-slide-badge">01 / 12</span>
+      <span style="color:rgba(255,255,255,0.3)">|</span>
+      <span id="current-slide-topic" style="color:#fff;">PORTADA</span>
+    </div>
+
+    <div class="hud-right">
+      <button class="btn-hud" id="btn-sound-toggle" title="Activar/Desactivar efectos de sonido HUD">
+        <span>🔊</span> SFX: ON
+      </button>
+      <button class="btn-hud" id="btn-autoplay" title="Activar reproducción automática (7 segundos)">
+        <span>▶</span> AUTOPLAY
+      </button>
+      <button class="btn-hud" id="btn-overview" title="Vista de pájaro de todo el lienzo espacial (ESC)">
+        <span>🪐</span> VISTA MAPA
+      </button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR DESPLEGABLE CON ÍNDICE -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">
+        <span>⚡</span> ÍNDICE ERGONÓMICO
+      </div>
+      <button class="btn-close-sidebar" id="btn-close-sidebar">✕</button>
+    </div>
+    <div class="sidebar-list" id="sidebar-items-container">
+      <!-- Generado dinámicamente -->
+    </div>
+  </aside>
+
+  <!-- LIENZO ESPACIAL INFINITO PREZI 2D -->
+  <main id="viewport">
+    <div id="universe">
+      <!-- Líneas de constelación interconectando los slides -->
+      <svg id="constellation-lines">
+        <!-- Las líneas se trazan en JS según coordenadas de slides -->
+      </svg>
+
+      <!-- DIAPOSITIVA 1: PORTADA -->
+      <article class="slide active" data-index="1" data-title="Portada e Identidad" data-x="0" data-y="0" data-scale="1" data-rotate="0">
+        <div class="slide-header">
+          <span class="slide-tag">SLIDE 01 // PORTADA</span>
+          <span class="slide-number-badge">01 / 12</span>
+        </div>
+        <div class="slide-body" style="align-items: center; justify-content: center; text-align: center; flex-direction: column;">
+          <div style="max-width: 850px;">
+            <div style="display:inline-block; padding: 6px 18px; border-radius: 30px; background: rgba(0, 240, 255, 0.15); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-family: 'JetBrains Mono', monospace; margin-bottom: 20px; font-weight: 600;">
+              UNIVERSIDAD // EXPERIENCIA DE USUARIO
+            </div>
+            <h1 class="slide-title" style="font-size: 3.4rem; margin-bottom: 12px; text-shadow: 0 0 30px rgba(0,240,255,0.4);">
+              ERGONOMÍA DEL JUEGO
+            </h1>
+            <h2 class="slide-subtitle" style="font-size: 1.8rem; color: var(--neon-magenta); margin-bottom: 32px;">
+              DISPOSITIVOS DE INTERACCIÓN EN VIDEOJUEGOS
+            </h2>
+            <div class="cyber-card" style="margin-bottom: 28px; text-align: left; max-width: 680px; margin-left: auto; margin-right: auto; border-color: var(--border-cyan);">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 12px;">
+                <span style="color:var(--neon-cyan); font-family:'JetBrains Mono', monospace;">AUTORES DEL ESTUDIO:</span>
+                <span style="color:var(--neon-amber); font-family:'JetBrains Mono', monospace;">FECHA: 12/07/2026</span>
+              </div>
+              <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 1.05rem;">
+                <li>👤 <strong>David Alessandro Contreras Baide</strong> <span style="color:var(--text-muted);">(124390076)</span></li>
+                <li>👤 <strong>Carlos Francisco Mejía Molina</strong> <span style="color:var(--text-muted);">(124390052)</span></li>
+                <li>👤 <strong>Cesar Obdulio Regalado Portillo</strong> <span style="color:var(--text-muted);">(124390069)</span></li>
+              </ul>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">
+              Basado rigurosamente en <em>Mondelo, P. R. (2001). Ergonomía 4: El trabajo en oficinas</em> adaptado al ecosistema gamer.
+            </p>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>Usa las flechas ➔ / ⬅ o haz clic en "Siguiente" para iniciar el viaje espacial</span>
+          <span style="color: var(--neon-cyan);">PRESIONA ESPACIO PARA AVANZAR</span>
+        </div>
+      </article>
+
+      <!-- DIAPOSITIVA 2: ERGONOMÍA Y VIDEOJUEGOS -->
+      <article class="slide" data-index="2" data-title="Ergonomía y Videojuegos" data-x="2400" data-y="-600" data-scale="1.15" data-rotate="8">
+        <div class="slide-header">
+          <span class="slide-tag">SLIDE 02 // FUNDAMENTOS</span>
+          <span class="slide-number-badge">02 / 12</span>
+        </div>
+        <div class="slide-title">Ergonomía y su Rol en el Ecosistema Gamer</div>
+        <div class="slide-subtitle">De la Oficina (Mondelo, 2001) a la Estación de Juego del Siglo XXI</div>
+        <div class="slide-body">
+          <div class="slide-col">
+            <div class="cyber-card cyan-highlight">
+              <h3>🎯 Definición Fundamental (Mondelo, 2001)</h3>
+              <p>
+                Según Mondelo (2001, p. 15), la ergonomía tiene por objetivo fundamental <strong>"adaptar las máquinas, el entorno de trabajo y los objetos a las capacidades fisiológicas, anatómicas y cognitivas del ser humano"</strong>, evitando que el usuario sea quien fuerce su biología a la máquina.
+              </p>
+            </div>
+            <div class="cyber-card">
+              <h3>⚡ La Doble Dimensión Ergonómica del Gaming</h3>
+              <ul>
+                <li><strong>Carga Biomecánica / Física:</strong> Mantener posturas estáticas prolongadas, micro-movimientos articulares repetitivos (muñeca y pulgar) y demandas antropométricas de agarre.</li>
+                <li><strong>Carga Cognitiva / Senso-Motora:</strong> Procesamiento visual continuo de alta velocidad, coordinación visomanual y reducción de latencia en la toma de decisiones competitiva.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="slide-col">
+            <!-- Diagrama SVG: Bucle Cibernético Humano-Máquina -->
+            <div class="cyber-card highlight" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+              <h3>🔄 Bucle Cibernético Humano-Videojuego</h3>
+              <svg viewBox="0 0 460 220" style="width:100%; height:180px; margin: 10px 0;">
+                <defs>
+                  <marker id="arrow-cyan" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#00f0ff" />
+                  </marker>
+                </defs>
+                <!-- Humano -->
+                <rect x="20" y="50" width="130" height="110" rx="12" fill="rgba(0,240,255,0.12)" stroke="#00f0ff" stroke-width="2"/>
+                <text x="85" y="85" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">SISTEMA HUMANO</text>
+                <text x="85" y="110" text-anchor="middle" fill="#94a3b8" font-size="11">Percepción Visual/Auditiva</text>
+                <text x="85" y="130" text-anchor="middle" fill="#00ff88" font-size="11">Acción Motora (Manos)</text>
+                <!-- Máquina -->
+                <rect x="310" y="50" width="130" height="110" rx="12" fill="rgba(255,0,127,0.12)" stroke="#ff007f" stroke-width="2"/>
+                <text x="375" y="85" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">VIDEOJUEGO (PC/CONSOLE)</text>
+                <text x="375" y="110" text-anchor="middle" fill="#94a3b8" font-size="11">Procesamiento / Latencia</text>
+                <text x="375" y="130" text-anchor="middle" fill="#ff007f" font-size="11">Salida: PVD / Audio / Háptica</text>
+                <!-- Flechas -->
+                <path d="M 150 75 L 310 75" stroke="#00f0ff" stroke-width="2.5" marker-end="url(#arrow-cyan)"/>
+                <text x="230" y="65" text-anchor="middle" fill="#00f0ff" font-size="11" font-weight="600">INPUT (Mando/Teclado)</text>
+                <path d="M 310 135 L 150 135" stroke="#ff007f" stroke-width="2.5" marker-end="url(#arrow-cyan)"/>
+                <text x="230" y="155" text-anchor="middle" fill="#ff007f" font-size="11" font-weight="600">OUTPUT (Pantalla/Audio)</text>
+              </svg>
+              <p style="font-size: 0.88rem; color: var(--text-muted); text-align: center;">
+                La ergonomía optimiza la interfaz de entrada y salida para maximizar el rendimiento y prevenir lesiones.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>Mondelo, P. R. (2001). Ergonomía 4: El trabajo en oficinas (Cap. 1 & 2)</span>
+          <span>02 / 12</span>
+        </div>
+      </article>
+
+      <!-- DIAPOSITIVA 3: CANALES DE INTERACCIÓN HUMANO-COMPUTADOR -->
+      <article class="slide" data-index="3" data-title="Canales de Interacción HCI" data-x="4800" data-y="400" data-scale="1" data-rotate="-6">
+        <div class="slide-header">
+          <span class="slide-tag">SLIDE 03 // HCI & CANALES</span>
+          <span class="slide-number-badge">03 / 12</span>
+        </div>
+        <div class="slide-title">Canales de Interacción Humano-Computador (HCI)</div>
+        <div class="slide-subtitle">Taxonomía Ergonómica de Entradas (Input) y Salidas (Output) en Gaming</div>
+        <div class="slide-body">
+          <div class="slide-col">
+            <div class="cyber-card cyan-highlight">
+              <h3>🕹️ Dispositivos de Entrada (Input Devices)</h3>
+              <p>Traducen la intención motora del jugador al entorno virtual. Deben minimizar la fatiga muscular y maximizar la resolución de captura:</p>
+              <table class="cyber-table">
+                <thead>
+                  <tr>
+                    <th>Dispositivo</th>
+                    <th>Canal Fisiológico</th>
+                    <th>Prioridad Ergonómica</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Gamepad / Mando</strong></td>
+                    <td>Bimanual pulgar-índice</td>
+                    <td>Antropometría P5-P95, agarre simétrico</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Ratón Gamer</strong></td>
+                    <td>Antebrazo / Muñeca</td>
+                    <td>Precisión sub-milimétrica, bajo peso</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Teclado Mecánico</strong></td>
+                    <td>Falanges de 10 dedos</td>
+                    <td>Fuerza de actuación controlada (45g)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="slide-col">
+            <div class="cyber-card highlight">
+              <h3>🖥️ Dispositivos de Salida (Output Devices)</h3>
+              <p>Estimulan los receptores sensoriales del jugador. El diseño ergonómico evita la saturación sensorial del canal visual principal:</p>
+              <ul style="margin-top: 10px;">
+                <li><strong>Canal Visual (PVD - Monitores/VR):</strong> Representa el 80% de la carga cognitiva. Requiere altas tasas de refresco para evitar centelleos asténicos.</li>
+                <li><strong>Canal Auditivo (3D Binaural):</strong> Alivia el canal visual transmitiendo posicionamiento espacial de eventos mediante HRTF.</li>
+                <li><strong>Canal Somatosensorial (Háptica):</strong> Transmite vibración y resistencia tensional directamente a mecanoreceptores palmares.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>Clasificación basada en ISO 9241-410 & Mondelo (2001)</span>
+          <span>03 / 12</span>
+        </div>
+      </article>
+
+      <!-- DIAPOSITIVA 4: MANDO DE CONSOLA (GAMEPAD) -->
+      <article class="slide" data-index="4" data-title="Mando de Consola (Gamepad)" data-x="6800" data-y="-1200" data-scale="1.25" data-rotate="12">
+        <div class="slide-header">
+          <span class="slide-tag">SLIDE 04 // BIOMECÁNICA DEL GAMEPAD</span>
+          <span class="slide-number-badge">04 / 12</span>
+        </div>
+        <div class="slide-title">Mando de Consola: Anatomía y Antropometría</div>
+        <div class="slide-subtitle">Aplicación de la "Palanca de Control" de Mondelo (2001, p. 47) al Gamepad Moderno</div>
+        <div class="slide-body">
+          <div class="slide-col">
+            <div class="cyber-card cyan-highlight">
+              <h3>📏 Antropometría Percentil 5 a 95 (Mondelo p. 47)</h3>
+              <p>
+                Mondelo establece que todo órgano de control manual debe acomodar desde el <strong>Percentil 5 femenino</strong> (manos pequeñas, ~16 cm de longitud palmar) hasta el <strong>Percentil 95 masculino</strong> (~20.5 cm).
+              </p>
+              <ul style="margin-top: 10px;">
+                <li><strong>Bimanualidad Simétrica vs Asimétrica:</strong> Disposición de joysticks (alineados tipo PlayStation vs desplazados tipo Xbox) para optimizar la pronación neutral de la muñeca.</li>
+                <li><strong>Área de Alcance del Pulgar (Thumb Zone):</strong> El pulgar realiza abducción y flexión constante; los sticks deben situarse dentro del radio natural de rotación carpometacarpiana (&lt; 45 mm).</li>
+              </ul>
+            </div>
+            <div class="cyber-card">
+              <h3>⚙️ Biomecánica de Gatillos y Botones</h3>
+              <p>
+                Los gatillos posteriores (L2/R2) aprovechan la fuerza de flexión del dedo índice/medio sin desestabilizar el agarre palmar (fuerza óptima de activación: 1.5 a 3.0 N).
+              </p>
+            </div>
+          </div>
+          <div class="slide-col">
+            <div class="slide-image-box">
+              <img src="images/ergonomic_controller_design.png" alt="Análisis Ergonómico de Gamepad" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'600\' height=\'350\' viewBox=\'0 0 600 350\' fill=\'%230b1120\'><rect width=\'600\' height=\'350\' fill=\'%230b1120\'/><circle cx=\'300\' cy=\'175\' r=\'120\' fill=\'none\' stroke=\'%2300f0ff\' stroke-width=\'2\'/><path d=\'M180 180 Q300 280 420 180\' fill=\'none\' stroke=\'%23ff007f\' stroke-width=\'4\'/><text x=\'300\' y=\'180\' fill=\'%2300f0ff\' font-size=\'18\' text-anchor=\'middle\' font-family=\'sans-serif\'>BIOMECÁNICA DEL GAMEPAD P5-P95</text></svg>'">
+              <div class="image-caption">FIG 01: Análisis antropométrico de agarre y arcos articulares del pulgar</div>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>Mondelo, P. R. (2001). Ergonomía 4: El trabajo en oficinas, p. 47</span>
+          <span>04 / 12</span>
+        </div>
+      </article>
+
+      <!-- DIAPOSITIVA 5: TECLADO Y RATÓN GAMER -->
+      <article class="slide" data-index="5" data-title="Teclado y Ratón Gamer" data-x="9200" data-y="-400" data-scale="1.1" data-rotate="-10">
+        <div class="slide-header">
+          <span class="slide-tag">SLIDE 05 // PC GAMING ERGONOMICS</span>
+          <span class="slide-number-badge">05 / 12</span>
+        </div>
+        <div class="slide-title">Teclado y Ratón: Prevención y Precisión en PC</div>
+        <div class="slide-subtitle">Inclinación, Switches Mecánicos y Biomecánica en el Combo Teclado-Ratón (Mondelo p. 43)</div>
+        <div class="slide-body">
+          <div class="slide-col">
+            <div class="cyber-card cyan-highlight">
+              <h3>⌨️ Requisitos Ergonómicos del Teclado (Mondelo p. 43)</h3>
+              <ul>
+                <li><strong>Inclinación Óptima (0° a 15°):</strong> Evitar extensiones dorsales excesivas de la muñeca. El uso de patas traseras muy altas aumenta la presión en el túnel carpiano.</li>
+                <li><strong>Switches Mecánicos Lineales:</strong> Fuerza de actuación baja (45g - Red switches) previene el microtraumatismo repetitivo al no requerir tocar fondo con fuerza.</li>
+                <li><strong>Reposamuñecas Acolchado:</strong> Mantiene la alineación neutra (0° de extensión/flexión).</li>
+              </ul>
+            </div>
+            <!-- SVG: Ángulo neutro de muñeca -->
+            <div class="cyber-card">
+              <h3>📐 Ángulos de Desviación de Muñeca</h3>
+              <svg viewBox="0 0 440 90" style="width:100%; height:75px;">
+                <!-- Correcto -->
+                <line x1="20" y1="45" x2="160" y2="45" stroke="#00ff88" stroke-width="6" stroke-linecap="round"/>
+                <text x="90" y="25" fill="#00ff88" font-size="11" text-anchor="middle" font-weight="700">✓ POSICIÓN NEUTRA (0°)</text>
+                <!-- Incorrecto -->
+                <line x1="250" y1="65" x2="330" y2="45" stroke="#ff007f" stroke-width="6" stroke-linecap="round"/>
+                <line x1="330" y1="45" x2="410" y2="20" stroke="#ff007f" stroke-width="6" stroke-linecap="round"/>
+                <text x="330" y="25" fill="#ff007f" font-size="11" text-anchor="middle" font-weight="700">✕ EXTENSIÓN DAÑINA (&gt;15°)</text>
+              </svg>
+            </div>
+          </div>
+          <div class="slide-col">
+            <div class="cyber-card highlight">
+              <h3>🖱️ Biomecánica del Ratón Gamer & APM</h3>
+              <p>
+                En eSports competitivos se superan las <strong>300 APM (Acciones por Minuto)</strong>. El ratón debe ajustarse a los 3 tipos antropométricos de agarre:
+              </p>
+              <table class="cyber-table" style="margin-top:10px;">
+                <thead>
+                  <tr>
+                    <th>Estilo de Agarre</th>
+                    <th>Contacto Palmar</th>
+                    <th>Impacto Ergonómico</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Palm Grip</strong></td>
+                    <td>100% palma en dorso</td>
+                    <td>Menor fatiga articular, mayor control de brazo</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Claw Grip</strong></td>
+                    <td>Palma posterior + dedos garra</td>
+                    <td>Alta velocidad de clic, estrés intermedio</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Fingertip</strong></td>
+                    <td>Sólo yemas de los dedos</td>
+                    <td>Máxima micro-precisión, fatiga intrínseca rápida</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>Mondelo, P. R. (2001). Ergonomía 4: El trabajo en oficinas, p. 43-46</span>
+          <span>05 / 12</span>
+        </div>
+      </article>
+
+      <!-- DIAPOSITIVA 6: CONFORT VISUAL EN PVD -->
+      <article class="slide" data-index="6" data-title="Confort Visual en Pantallas PVD" data-x="11400" data-y="800" data-scale="1.2" data-rotate="15">
+        <div class="slide-header">
+          <span class="slide-tag">SLIDE 06 // PVD & SALUD VISUAL</span>
+          <span class="slide-number-badge">06 / 12</span>
+        </div>
+        <div class="slide-title">Confort Visual en Pantallas de Visualización (PVD)</div>
+        <div class="slide-subtitle">Prevención de Astenopia, Tasas de Refresco (144Hz+) y Control de Contraste (Mondelo p. 63)</div>
+        <div class="slide-body">
+          <div class="slide-col">
+            <div class="cyber-card cyan-highlight">
+              <h3>👁️ Astenopia y Fatiga Visual en PVD (Mondelo p. 63)</h3>
+              <p>
+                La fijación sostenida en PVD reduce la frecuencia del parpadeo humano de <strong>18-20 a menos de 5 parpadeos/minuto</strong>, induciendo sequedad ocular, tensión en el músculo ciliar y cefalea.
+              </p>
+            </div>
+            <div class="cyber-card">
+              <h3>🖥️ Parámetros Ergonómicos de Monitores Gamer</h3>
+              <ul>
+                <li><strong>Tasa de Refresco Elevada (144Hz - 240Hz+):</strong> Elimina el micro-centelleo (flickering) indetectable conscientemente pero que causa estrés retiniano severo a 60Hz.</li>
+                <li><strong>Anti-deslumbramiento (Matte Coating):</strong> Evita reflejos especulares de fuentes lumínicas del entorno.</li>
+                <li><strong>Distancia Visual Óptima:</strong> 50 cm a 70 cm con el borde superior del monitor a nivel u 8° por debajo del eje visual horizontal.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="slide-col">
+            <div class="slide-image-box">
+              <img src="images/visual_fatigue_screen.png" alt="Ergonomía Visual PVD" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'600\' height=\'350\' viewBox=\'0 0 600 350\' fill=\'%230b1120\'><rect width=\'600\' height=\'350\' fill=\'%230b1120\'/><text x=\'300\' y=\'175\' fill=\'%2300f0ff\' font-size=\'20\' text-anchor=\'middle\'>ANÁLISIS DE CONFORT VISUAL Y PVD</text></svg>'">
+              <div class="image-caption">FIG 02: Geometría visual, línea de mira y espectro lumínico en PVD</div>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>Mondelo, P. R. (2001). Ergonomía 4: El trabajo en oficinas, p. 63-71</span>
+          <span>06 / 12</span>
+        </div>
+      </article>
+
+      <!-- DIAPOSITIVA 7: RIESGOS BIOMECÁNICOS Y PATOLOGÍAS -->
+      <article class="slide" data-index="7" data-title="Riesgos Biomecánicos" data-x="9800" data-y="3000" data-scale="1.15" data-rotate="-15">
+        <div class="slide-header">
+          <span class="slide-tag">SLIDE 07 // PATOLOGÍAS Y SALUD</span>
+          <span class="slide-number-badge">07 / 12</span>
+        </div>
+        <div class="slide-title">Riesgos Biomecánicos y Lesiones del Gamer</div>
+        <div class="slide-subtitle">Microtraumatismos Repetitivos (RSI) y Estratagemas Clínicas de Prevención</div>
+        <div class="slide-body">
+          <div class="slide-col">
+            <div class="cyber-card highlight">
+              <h3>⚠️ Cuadro Clínico de Patologías en Gaming</h3>
+              <table class="cyber-table">
+                <thead>
+                  <tr>
+                    <th>Patología</th>
+                    <th>Etiología Gamer</th>
+                    <th>Síntomas Clínicos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Túnel Carpiano (STC)</strong></td>
+                    <td>Compresión nervio mediano por apoyo duro e hiperextensión</td>
+                    <td>Parestesia en pulgar/índice, pérdida de fuerza de agarre</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Tenosinovitis De Quervain</strong></td>
+                    <td>Sobreuso del pulgar en joysticks y botones de mando</td>
+                    <td>Dolor agudo en la base del pulgar (tendón abductor)</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Cervicalgia ("Gamer Neck")</strong></td>
+                    <td>Inclinación craneal anterior (&gt;15° hacia el monitor)</td>
+                    <td>Sobrecarga de trapecios, vértigos miofasciales</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="slide-col">
+            <div class="cyber-card cyan-highlight">
+              <h3>🛡️ Medidas de Prevención Ergonométrica</h3>
+              <ul>
+                <li><strong>Regla 20-20-20 Visual:</strong> Cada 20 minutos de juego, mirar a un objeto a 20 pies (6 metros) durante 20 segundos para relajar la musculatura ciliar.</li>
+                <li><strong>Micro-descansos Activos:</strong> Pausas de 5 minutos cada hora con estiramientos de flexores y extensores del carpo.</li>
+                <li><strong>Sillas Ergonómicas ISO 9241:</strong> Soporte lumbar ajustable que mantenga la lordosis natural de la columna en ángulos cadera-rodilla de 90°-100°.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>Medicina del Trabajo aplicada a eSports & Ergonomía Biomecánica</span>
+          <span>07 / 12</span>
+        </div>
+      </article>
+
+      <!-- DIAPOSITIVA 8: ERGONOMÍA DEL SOFTWARE (HCI) -->
+      <article class="slide" data-index="8" data-title="Ergonomía del Software (HCI)" data-x="7200" data-y="2600" data-scale="1.1" data-rotate="6">
+        <div class="slide-header">
+          <span class="slide-tag">SLIDE 08 // ERGONOMÍA DE INTERFAZ (UI/UX)</span>
+          <span class="slide-number-badge">08 / 12</span>
+        </div>
+        <div class="slide-title">Ergonomía del Software en Videojuegos</div>
+        <div class="slide-subtitle">Adaptación de los 7 Principios de Diálogo (Mondelo p. 60 / ISO 9241-110) a UI/UX Gamer</div>
+        <div class="slide-body">
+          <div class="slide-col">
+            <div class="cyber-card cyan-highlight">
+              <h3>💡 Principios 1 al 4 (ISO 9241-110 / Mondelo)</h3>
+              <ul>
+                <li><strong>1. Adecuación a la Tarea:</strong> El HUD del juego muestra sólo información crítica para la supervivencia/misión sin sobrecargar el campo visual central.</li>
+                <li><strong>2. Autodescriptividad:</strong> Iconos y marcadores con affordance clara (ej. barra roja = salud, icono de escudo = armadura).</li>
+                <li><strong>3. Controlabilidad:</strong> Permiso absoluto del jugador para remapear teclas (keybindings) e invertir ejes de cámara.</li>
+                <li><strong>4. Conformidad con Expectativas:</strong> Respeto por estándares universales (W-A-S-D para movimiento, Esc para menú).</li>
+              </ul>
+            </div>
+          </div>
+          <div class="slide-col">
+            <div class="cyber-card highlight">
+              <h3>🚀 Principios 5 al 7 (ISO 9241-110 / Mondelo)</h3>
+              <ul>
+                <li><strong>5. Tolerancia a Errores:</strong> Confirmaciones claras antes de sobrescribir partidas o destruir ítems valiosos ("Undo" amigable).</li>
+                <li><strong>6. Individualización:</strong> Escala personalizable del tamaño del HUD y modos de accesibilidad para daltónicos (Protanopia/Deuteranopia).</li>
+                <li><strong>7. Facilidad de Aprendizaje:</strong> Diseño de niveles tutoriales progresivos que introducen mecánicas sin manuales extensos de texto.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>Mondelo, P. R. (2001). Ergonomía 4: El trabajo en oficinas, p. 60-62 / ISO 9241-110</span>
+          <span>08 / 12</span>
+        </div>
+      </article>
+
+      <!-- DIAPOSITIVA 9: HÁPTICA Y AUDIO ESPACIAL 3D -->
+      <article class="slide" data-index="9" data-title="Háptica y Audio Espacial 3D" data-x="4400" data-y="3200" data-scale="1.2" data-rotate="-8">
+        <div class="slide-header">
+          <span class="slide-tag">SLIDE 09 // FEEDBACK SENSORIAL AVANZADO</span>
+          <span class="slide-number-badge">09 / 12</span>
+        </div>
+        <div class="slide-title">Retroalimentación Háptica y Audio Espacial 3D</div>
+        <div class="slide-subtitle">Descarga Cognitiva del Canal Visual mediante Estimulación Multimodal</div>
+        <div class="slide-body">
+          <div class="slide-col">
+            <div class="cyber-card cyan-highlight">
+              <h3>🎮 Háptica de Alta Definición (HD Haptics)</h3>
+              <p>
+                A diferencia de los motores de contrapeso tradicionales (rumble), los <strong>actuadores lineales de voz (ej. DualSense)</strong> reproducen ondas hápticas con frecuencias exactas, informando al tacto sobre superficies (arena, hielo, metal) sin requerir verificación visual.
+              </p>
+              <p style="margin-top: 10px;">
+                <strong>Gatillos Adaptativos:</strong> Modulan la impedancia física en tiempo real para indicar atasco de armas o tensión de arco, transmitiendo estado del sistema directamente al sistema neuromuscular.
+              </p>
+            </div>
+          </div>
+          <div class="slide-col">
+            <div class="cyber-card highlight">
+              <h3>🎧 Audio Espacial 3D Binaural (HRTF)</h3>
+              <p>
+                La función de transferencia relacionada con la cabeza (<strong>HRTF</strong>) simula la difracción acústica en el pabellón auricular humano para ubicar sonidos en una esfera 360° perfecta.
+              </p>
+              <ul style="margin-top: 12px;">
+                <li><strong>Beneficio Ergonómico:</strong> Permite localizar la trayectoria de un enemigo o proyectil por vía auditiva pura, reduciendo drásticamente el tiempo de exploration visual e incrementando la conciencia situacional.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>Interacción Multimodal y Reducción de Carga Cognitiva en HCI</span>
+          <span>09 / 12</span>
+        </div>
+      </article>
+
+      <!-- DIAPOSITIVA 10: EL FUTURO DE LA INTERACCIÓN GAMER -->
+      <article class="slide" data-index="10" data-title="Futuro: VR, BCI y Accesibilidad" data-x="1800" data-y="2800" data-scale="1.15" data-rotate="10">
+        <div class="slide-header">
+          <span class="slide-tag">SLIDE 10 // INNOVACIÓN Y ACCESIBILIDAD</span>
+          <span class="slide-number-badge">10 / 12</span>
+        </div>
+        <div class="slide-title">El Futuro de la Interacción: VR, BCI y Accesibilidad</div>
+        <div class="slide-subtitle">Fronteras Ergonómicas en Realidad Virtual, Neurointerfaz y Diseño Inclusivo</div>
+        <div class="slide-body">
+          <div class="slide-col">
+            <div class="cyber-card cyan-highlight">
+              <h3>🥽 Realidad Virtual (VR) y Cinetosis</h3>
+              <p>
+                La <strong>Cinetosis (Motion Sickness)</strong> en VR ocurre por conflicto sensorial: la retina percibe aceleración en el espacio tridimensional mientras que el sistema vestibular (oído interno) reporta reposo estático.
+              </p>
+              <p style="margin-top:8px;">
+                <strong>Solución Ergonómica:</strong> Latencia motion-to-photon inferior a 20 milisegundos y tasas sostenidas de 90Hz+ para sincronización sensorial perfecta.
+              </p>
+            </div>
+            <div class="cyber-card">
+              <h3>🧠 Interfaces Cerebro-Computador (BCI)</h3>
+              <p>
+                Lectura no invasiva de señales de electromiografía de superficie (EMG) e impulsos corticales (EEG) para activar comandos motrices a velocidad sináptica directa.
+              </p>
+            </div>
+          </div>
+          <div class="slide-col">
+            <div class="cyber-card highlight">
+              <h3>♿ Accesibilidad Universal: Xbox Adaptive Controller</h3>
+              <p>
+                El paradigma ergonómico moderno es la <strong>inclusión universal</strong>. Dispositivos como el Xbox Adaptive Controller rompen el estándar del gamepad tradicional, ofreciendo puertos jack de 3.5 mm para conectar interruptores de pie, soplado, palancas modulares y botones gigantes adaptados a cualquier diversidad funcional motora.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>Diseño Inclusivo y Ergonomía Neuro-sensorial Avanzada</span>
+          <span>10 / 12</span>
+        </div>
+      </article>
+
+      <!-- DIAPOSITIVA 11: CONCLUSIONES -->
+      <article class="slide" data-index="11" data-title="Conclusiones y Síntesis" data-x="-800" data-y="2200" data-scale="1.1" data-rotate="-12">
+        <div class="slide-header">
+          <span class="slide-tag">SLIDE 11 // SÍNTESIS ACADÉMICA</span>
+          <span class="slide-number-badge">11 / 12</span>
+        </div>
+        <div class="slide-title">Conclusiones: El Balance entre Salud y Rendimiento</div>
+        <div class="slide-subtitle">La Ergonomía como Eje Central de la Interacción Humano-Videojuego</div>
+        <div class="slide-body">
+          <div class="slide-col">
+            <div class="cyber-card cyan-highlight" style="height: 100%; display: flex; flex-direction: column; justify-content: center;">
+              <h3>🏆 Síntesis de los Hallazgos</h3>
+              <ul style="font-size: 1.05rem; gap: 14px;">
+                <li><strong>1. De la Oficina al Setup Gamer:</strong> Las leyes antropométricas y biomecánicas de Mondelo (2001) son totalmente transferibles y aún más críticas en el gaming de alto rendimiento debido al volumen e intensidad de inputs por segundo.</li>
+                <li><strong>2. Sinergia Hardware-Software:</strong> Un periférico perfecto no compensa una interfaz confusa; la ergonomía exige armonía total entre el mando físico y los principios de diálogo del software (ISO 9241-110).</li>
+                <li><strong>3. Salud y Rendimiento no son Opuestos:</strong> El confort ergonómico previene lesiones graves (STC, tendinitis) mientras maximiza directamente el APM, la precisión competitiva y la inmersión del jugador.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>Universidad // Ergonomía del Juego // Experiencia de Usuario</span>
+          <span>11 / 12</span>
+        </div>
+      </article>
+
+      <!-- DIAPOSITIVA 12: REFERENCIAS BIBLIOGRÁFICAS APA -->
+      <article class="slide" data-index="12" data-title="Referencias Bibliográficas" data-x="-1400" data-y="600" data-scale="1" data-rotate="0">
+        <div class="slide-header">
+          <span class="slide-tag">SLIDE 12 // BIBLIOGRAFÍA APA 7ª ED.</span>
+          <span class="slide-number-badge">12 / 12</span>
+        </div>
+        <div class="slide-title">Referencias Bibliográficas</div>
+        <div class="slide-subtitle">Fuentes Académicas y Normativas Internacionales (Formato APA 7ª Edición)</div>
+        <div class="slide-body">
+          <div class="slide-col">
+            <div class="cyber-card" style="height: 100%;">
+              <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 18px; font-size: 0.98rem;">
+                <li style="padding-left: 28px; text-indent: -28px;">
+                  📚 <strong>Mondelo, P. R.</strong>, Gregori, E., & Barrau, P. (2001). <em>Ergonomía 4: El trabajo en oficinas</em>. Alfaomega Grupo Editor / Edicions UPC. (Material obligatorio base del estudio).
+                </li>
+                <li style="padding-left: 28px; text-indent: -28px;">
+                  📚 <strong>ISO 9241-410:2008.</strong> <em>Ergonomics of human-system interaction — Part 410: Design criteria for physical input devices</em>. International Organization for Standardization.
+                </li>
+                <li style="padding-left: 28px; text-indent: -28px;">
+                  📚 <strong>ISO 9241-110:2020.</strong> <em>Ergonomics of human-system interaction — Part 110: Interaction principles</em>. International Organization for Standardization.
+                </li>
+                <li style="padding-left: 28px; text-indent: -28px;">
+                  📚 <strong>Norman, D. A.</strong> (2013). <em>The Design of Everyday Things: Revised and Expanded Edition</em>. Basic Books.
+                </li>
+                <li style="padding-left: 28px; text-indent: -28px;">
+                  📚 <strong>Shneiderman, B.</strong>, & Plaisant, C. (2010). <em>Designing the User Interface: Strategies for Effective Human-Computer Interaction</em> (5th ed.). Addison-Wesley.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>FIN DE LA PRESENTACIÓN // GRACIAS POR SU ATENCIÓN</span>
+          <span>12 / 12</span>
+        </div>
+      </article>
+
+    </div>
+  </main>
+
+  <!-- HUD INFERIOR / NAVEGACIÓN -->
+  <footer class="hud-footer">
+    <button class="btn-nav" id="btn-prev" title="Diapositiva Anterior (Flecha Izquierda)">
+      <span>⬅</span> ANTERIOR
+    </button>
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--neon-cyan); padding: 0 10px;" id="nav-indicator">
+      SLIDE 01 / 12
+    </div>
+    <button class="btn-nav" id="btn-next" title="Diapositiva Siguiente (Flecha Derecha / Espacio)">
+      SIGUIENTE <span>➔</span>
+    </button>
+  </footer>
+
+  <!-- GUÍA FLOTANTE DE TECLADO -->
+  <div class="keyboard-hint">
+    <span><kbd>➔</kbd> <kbd>Espacio</kbd> Siguiente</span>
+    <span><kbd>⬅</kbd> Anterior</span>
+    <span><kbd>Esc</kbd> Vista Mapa</span>
+    <span><kbd>A</kbd> Autoplay</span>
+  </div>
+
+  <!-- MINIMAPA RADAR DE CONSTELACIÓN -->
+  <div class="minimap-wrapper">
+    <div class="minimap-title">
+      <span>RADAR ESPACIAL PREZI</span>
+      <span style="color: var(--neon-magenta);">● EN VIVO</span>
+    </div>
+    <svg id="minimap-svg" viewBox="-2500 -2000 16000 7000">
+      <!-- Los nodos y líneas se generan dinámicamente -->
+    </svg>
+  </div>
+
+  <!-- MOTOR PREZI JAVASCRIPT -->
+  <script>
+    // ESTADO DE LA PRESENTACIÓN
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    let currentIndex = 0;
+    let isOverviewMode = false;
+    let isAutoplay = false;
+    let autoplayTimer = null;
+    let soundEnabled = true;
+
+    // Elementos del DOM
+    const universe = document.getElementById('universe');
+    const badgeNumber = document.getElementById('current-slide-badge');
+    const badgeTopic = document.getElementById('current-slide-topic');
+    const navIndicator = document.getElementById('nav-indicator');
+    const constellationSVG = document.getElementById('constellation-lines');
+    const minimapSVG = document.getElementById('minimap-svg');
+    const sidebarContainer = document.getElementById('sidebar-items-container');
+    const sidebar = document.getElementById('sidebar');
+
+    // WEB AUDIO API SYNTHESIZER (EFECTOS DE SONIDO HUD FUTURISTA)
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContextClass();
+
+    function playSfx(type = 'next') {
+      if (!soundEnabled) return;
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+
+      if (type === 'next') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'prev') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(660, now);
+        osc.frequency.exponentialRampToValueAtTime(330, now + 0.12);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'overview') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.25);
+        gain.gain.setValueAtTime(0.07, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+        osc.start(now);
+        osc.stop(now + 0.28);
+      }
+    }
+
+    // GENERAR FONDO DE ESTRELLAS ESPACIAL EN CANVAS
+    function initSpaceCanvas() {
+      const canvas = document.getElementById('space-canvas');
+      const ctx = canvas.getContext('2d');
+      let width, height;
+      let stars = [];
+
+      function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      for (let i = 0; i < 220; i++) {
+        stars.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          radius: Math.random() * 1.8,
+          alpha: Math.random(),
+          speed: 0.005 + Math.random() * 0.015
+        });
+      }
+
+      function renderStars() {
+        ctx.clearRect(0, 0, width, height);
+        stars.forEach(s => {
+          s.alpha += s.speed;
+          if (s.alpha > 1 || s.alpha < 0.2) s.speed = -s.speed;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(0, 240, 255, ${s.alpha})`;
+          ctx.fill();
+        });
+        requestAnimationFrame(renderStars);
+      }
+      renderStars();
+    }
+
+    // CONSTRUIR CONSTELACIÓN DE LÍNEAS ENTRE SLIDES & MINIMAPA & SIDEBAR
+    function buildConstellationAndUI() {
+      let svgPaths = '';
+      let minimapContent = '';
+
+      slides.forEach((slide, idx) => {
+        const x = parseFloat(slide.dataset.x);
+        const y = parseFloat(slide.dataset.y);
+        const title = slide.dataset.title;
+
+        // Conectar línea con el slide anterior
+        if (idx > 0) {
+          const prev = slides[idx - 1];
+          const px = parseFloat(prev.dataset.x) + 620;
+          const py = parseFloat(prev.dataset.y) + 360;
+          const cx = x + 620;
+          const cy = y + 360;
+          svgPaths += `<path d="M ${px} ${py} L ${cx} ${cy}" stroke="rgba(0, 240, 255, 0.25)" stroke-width="6" stroke-dasharray="14 10" />`;
+          minimapContent += `<line x1="${px}" y1="${py}" x2="${cx}" y2="${cy}" stroke="rgba(0, 240, 255, 0.35)" stroke-width="40"/>`;
+        }
+
+        // Nodo del minimapa
+        minimapContent += `
+          <circle class="minimap-node ${idx === 0 ? 'active' : ''}" data-target="${idx}" cx="${x + 620}" cy="${y + 360}" r="220" />
+        `;
+
+        // Item del Sidebar
+        const sidebarItem = document.createElement('div');
+        sidebarItem.className = `sidebar-item ${idx === 0 ? 'active' : ''}`;
+        sidebarItem.innerHTML = `
+          <span class="sidebar-item-num">${String(idx + 1).padStart(2, '0')}</span>
+          <span style="font-size: 0.95rem;">${title}</span>
+        `;
+        sidebarItem.addEventListener('click', () => {
+          goToSlide(idx);
+          sidebar.classList.remove('open');
+        });
+        sidebarContainer.appendChild(sidebarItem);
+
+        // Click al slide para vista en modo overview
+        slide.addEventListener('click', () => {
+          if (isOverviewMode || idx !== currentIndex) {
+            goToSlide(idx);
+          }
+        });
+      });
+
+      constellationSVG.innerHTML = svgPaths;
+      minimapSVG.innerHTML = minimapContent;
+
+      // Click en minimapa
+      minimapSVG.querySelectorAll('.minimap-node').forEach(node => {
+        node.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const targetIdx = parseInt(node.dataset.target);
+          goToSlide(targetIdx);
+        });
+      });
+    }
+
+    // CÁLCULO DINÁMICO ESPACIAL PREZI PARA CENTRAR PERFECTAMENTE CADA SLIDE
+    function renderCamera() {
+      const activeSlide = slides[currentIndex];
+      const x = parseFloat(activeSlide.dataset.x) + 620;
+      const y = parseFloat(activeSlide.dataset.y) + 360;
+      const baseScale = parseFloat(activeSlide.dataset.scale) || 1;
+      const rot = parseFloat(activeSlide.dataset.rotate) || 0;
+
+      // Calcular factor responsivo según pantalla del usuario
+      const screenW = window.innerWidth;
+      const screenH = window.innerHeight;
+      const scaleFitW = (screenW * 0.88) / 1240;
+      const scaleFitH = (screenH * 0.82) / 720;
+      const fitScale = Math.min(scaleFitW, scaleFitH) / baseScale;
+
+      if (isOverviewMode) {
+        // VISTA DE PÁJARO DE TODO EL LIENZO ESPACIAL
+        universe.style.transform = `translate(50vw, 50vh) scale(0.09) rotate(0deg) translate(-5000px, -1200px)`;
+        document.getElementById('btn-overview').classList.add('active');
+        slides.forEach(s => s.classList.add('overview-mode'));
+      } else {
+        universe.style.transform = `translate(50vw, 50vh) scale(${fitScale}) rotate(${-rot}deg) translate(${-x}px, ${-y}px)`;
+        document.getElementById('btn-overview').classList.remove('active');
+        slides.forEach(s => s.classList.remove('overview-mode'));
+      }
+
+      // Actualizar estados UI
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === currentIndex);
+      });
+
+      minimapSVG.querySelectorAll('.minimap-node').forEach((n, idx) => {
+        n.classList.toggle('active', idx === currentIndex);
+      });
+
+      document.querySelectorAll('.sidebar-item').forEach((item, idx) => {
+        item.classList.toggle('active', idx === currentIndex);
+      });
+
+      const numStr = String(currentIndex + 1).padStart(2, '0');
+      badgeNumber.textContent = `${numStr} / 12`;
+      badgeTopic.textContent = activeSlide.dataset.title.toUpperCase();
+      navIndicator.textContent = `SLIDE ${numStr} / 12`;
+    }
+
+    function goToSlide(idx) {
+      if (idx < 0 || idx >= slides.length) return;
+      const isNext = idx > currentIndex;
+      currentIndex = idx;
+      isOverviewMode = false;
+      playSfx(isNext ? 'next' : 'prev');
+      renderCamera();
+    }
+
+    function toggleOverview() {
+      isOverviewMode = !isOverviewMode;
+      playSfx('overview');
+      renderCamera();
+    }
+
+    function toggleAutoplay() {
+      isAutoplay = !isAutoplay;
+      const btn = document.getElementById('btn-autoplay');
+      if (isAutoplay) {
+        btn.classList.add('active');
+        btn.innerHTML = `<span>⏸</span> AUTOPLAY: ON`;
+        autoplayTimer = setInterval(() => {
+          if (currentIndex < slides.length - 1) {
+            goToSlide(currentIndex + 1);
+          } else {
+            goToSlide(0);
+          }
+        }, 7000);
+      } else {
+        btn.classList.remove('active');
+        btn.innerHTML = `<span>▶</span> AUTOPLAY`;
+        clearInterval(autoplayTimer);
+      }
+    }
+
+    // EVENT LISTENERS BOTONES HUD
+    document.getElementById('btn-next').addEventListener('click', () => {
+      if (currentIndex < slides.length - 1) goToSlide(currentIndex + 1);
+    });
+
+    document.getElementById('btn-prev').addEventListener('click', () => {
+      if (currentIndex > 0) goToSlide(currentIndex - 1);
+    });
+
+    document.getElementById('btn-overview').addEventListener('click', toggleOverview);
+    document.getElementById('btn-autoplay').addEventListener('click', toggleAutoplay);
+
+    document.getElementById('btn-sound-toggle').addEventListener('click', function() {
+      soundEnabled = !soundEnabled;
+      this.innerHTML = soundEnabled ? `<span>🔊</span> SFX: ON` : `<span>🔇</span> SFX: OFF`;
+      this.classList.toggle('active', !soundEnabled);
+    });
+
+    document.getElementById('btn-sidebar-toggle').addEventListener('click', () => {
+      sidebar.classList.add('open');
+    });
+
+    document.getElementById('btn-close-sidebar').addEventListener('click', () => {
+      sidebar.classList.remove('open');
+    });
+
+    // EVENT LISTENERS TECLADO
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (currentIndex < slides.length - 1) goToSlide(currentIndex + 1);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (currentIndex > 0) goToSlide(currentIndex - 1);
+      } else if (e.key === 'Escape' || e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        toggleOverview();
+      } else if (e.key === 'a' || e.key === 'A') {
+        e.preventDefault();
+        toggleAutoplay();
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        sidebar.classList.toggle('open');
+      }
+    });
+
+    window.addEventListener('resize', renderCamera);
+
+    // INICIALIZACIÓN
+    window.addEventListener('DOMContentLoaded', () => {
+      initSpaceCanvas();
+      buildConstellationAndUI();
+      renderCamera();
+    });
+  </script>
+</body>
+</html>
